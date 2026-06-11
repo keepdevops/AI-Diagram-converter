@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlantUML Editor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <h1>PlantUML Editor</h1>
+
+      <label>
+        Example
+        <select id="example">
+          <option value="">— insert —</option>
+        </select>
+      </label>
+
+      <span class="spacer"></span>
+
+      <label>
+        Server
+        <input id="server" type="text" spellcheck="false"
+               placeholder="https://www.plantuml.com/plantuml" />
+      </label>
+
+      <label>
+        Format
+        <select id="format">
+          <option value="svg">SVG</option>
+          <option value="png">PNG</option>
+          <option value="txt">ASCII</option>
+        </select>
+      </label>
+
+      <label title="Endpoint the Fix/Generate buttons call (the diagram-agent bridge that drives matrix-safe)">
+        matrix-safe
+        <input id="agent-server" type="text" spellcheck="false"
+               placeholder="http://127.0.0.1:8770" />
+      </label>
+
+      <button id="fix" type="button" title="Repair the current diagram via matrix-safe">Fix ✦</button>
+      <button id="generate" type="button" title="Generate a diagram from a description">Generate ✦</button>
+
+      <select id="convert-target" title="Conversion output target">
+        <option value="plantuml">→ PlantUML</option>
+        <option value="mermaid">→ Mermaid</option>
+      </select>
+      <button id="convert" type="button" title="Convert pasted Markdown / JSON / YAML / text into a diagram">Convert ✦</button>
+
+      <button id="open-raw" type="button">Open ↗</button>
+      <button id="download" type="button">Download</button>
+    </header>
+
+    <main class="workspace">
+      <textarea id="editor" spellcheck="false"
+                placeholder="Type PlantUML here…"></textarea>
+      <section class="preview-pane">
+        <img id="preview" alt="Diagram preview" />
+        <div id="mermaid-preview" class="mermaid-preview" hidden></div>
+      </section>
+    </main>
+
+    <footer id="status" class="statusbar" data-kind="info">Ready</footer>
+  </div>
+
+  <script src="js/vendor/mermaid.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/agent.js"></script>
+</body>
+</html>
