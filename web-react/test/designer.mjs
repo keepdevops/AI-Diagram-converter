@@ -10,6 +10,9 @@ const page = await (await browser.newContext()).newPage();
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error' && !/preview image failed|Mermaid error|Failed to load|ERR_|net::/i.test(m.text())) errors.push(`console.error: ${m.text()}`); });
 
+// No agent backend in CI — stub health so the offline probe doesn't log an error.
+await page.route('**/api/health', (r) => r.fulfill({ json: { ok: true, agent: 'test.json', matrix_url: 'x' } }));
+
 await page.goto(URL, { waitUntil: 'networkidle' });
 // give the editor a box-and-arrow diagram to import
 await page.click('.seg button:has-text("Editor")');
