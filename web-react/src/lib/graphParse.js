@@ -37,18 +37,28 @@ function operand(tok) {
 
 const isDashed = (arrow) => /\.\./.test(arrow);
 
-// Generic box-and-arrow parser shared by most diagram types.
+// PlantUML grouping keywords map to our visual container kinds (cloud/folder/
+// frame have no shape of their own → render as a package container).
+const CONTAINER_KIND = {
+  package: 'package', node: 'node', component: 'component',
+  cloud: 'package', folder: 'package', frame: 'package', rectangle: 'package',
+};
+
+// Generic box-and-arrow parser shared by most diagram types. A brace-depth stack
+// tracks `package { … }` nesting so children get a `parent` (→ Designer groups).
 function parseBoxArrow(code, format, type) {
   const model = emptyModel(format, type);
   const byId = new Map();
-  const ensure = (op, isDecl = false) => {
+  const stack = []; // ids of the open container(s), innermost last
+  const ensure = (op, isDecl = false, kind = 'box') => {
     if (!op) return null;
     const existing = byId.get(op.id);
     if (existing) {
       if (isDecl && op.label) existing.label = op.label;
       return existing;
     }
-    const node = { id: op.id, label: op.label, kind: 'box', x: 0, y: 0, w: 120, h: 44 };
+    const node = { id: op.id, label: op.label, kind, x: 0, y: 0, w: 120, h: 44 };
+    if (stack.length) node.parent = stack[stack.length - 1];
     byId.set(op.id, node);
     model.nodes.push(node);
     return node;
@@ -56,9 +66,16 @@ function parseBoxArrow(code, format, type) {
 
   for (const raw of strip(code)) {
     const line = raw.trim();
-    if (line === '}' || line === '{' || /\{$/.test(line)) {
+    if (line === '}') { stack.pop(); continue; }
+    if (line === '{') continue;
+    if (/\{$/.test(line)) {
       const decl = line.match(DECL_RE);          // e.g. package "X" as Y {
-      if (decl) ensure({ id: decl[3] || nodeId(decl[2].replace(/"/g, '')), label: decl[2].replace(/"/g, '') }, true);
+      if (decl) {
+        const kind = CONTAINER_KIND[decl[1].toLowerCase()] || 'package';
+        const id = decl[3] || nodeId(decl[2].replace(/"/g, ''));
+        const node = ensure({ id, label: decl[2].replace(/"/g, '') }, true, kind);
+        if (node) { node.kind = kind; stack.push(node.id); }
+      }
       continue;
     }
     const em = line.match(EDGE_RE);

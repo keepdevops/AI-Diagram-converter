@@ -22,6 +22,12 @@ await page.waitForSelector('.designer-canvas .react-flow__node', { timeout: 2000
 const before = await page.locator('.designer-canvas .react-flow__node').count();
 console.log('imported nodes:', before);
 
+// the component example has two `package { }` blocks → parser reconstructs them
+// as Designer containers on import.
+const importedGroups = await page.locator('.designer-canvas .group-node').count();
+console.log('containers reconstructed from packages:', importedGroups, importedGroups >= 1 ? '✓' : '(none)');
+if (importedGroups < 1) errors.push('import did not reconstruct package containers');
+
 // drag a Database shape onto the canvas
 await page.locator('.palette-item:has-text("Database")').dragTo(page.locator('.designer-stage'));
 await page.waitForTimeout(300);
@@ -38,39 +44,39 @@ const redone = await page.locator('.designer-canvas .react-flow__node').count();
 console.log('undo/redo:', undone, '→', redone, (undone === before && redone === after) ? '✓' : '(unexpected)');
 if (!(undone === before && redone === after)) errors.push('undo/redo node count mismatch');
 
-// marquee-select all nodes (Shift+drag across the pane), then Group
+// add a second free shape, then marquee-select everything: `groupable` filters to
+// just the two free shapes (existing nodes are already containers/children).
+await page.locator('.palette-item:has-text("Actor")').dragTo(page.locator('.designer-stage'), { targetPosition: { x: 320, y: 160 } });
+await page.waitForTimeout(300);
 const box = await page.locator('.designer-canvas').boundingBox();
 await page.keyboard.down('Shift');
-await page.mouse.move(box.x + 8, box.y + 8);
+await page.mouse.move(box.x + 5, box.y + 5);
 await page.mouse.down();
-await page.mouse.move(box.x + box.width - 8, box.y + box.height - 8, { steps: 12 });
+await page.mouse.move(box.x + box.width - 5, box.y + box.height - 5, { steps: 15 });
 await page.mouse.up();
 await page.keyboard.up('Shift');
 await page.waitForTimeout(200);
+
 const groupBtn = page.locator('.designer button:has-text("Group")').first();
 if (await groupBtn.isEnabled()) {
   await groupBtn.click();
   await page.waitForTimeout(250);
   const groups = await page.locator('.designer-canvas .group-node').count();
-  console.log('group nodes after Group:', groups, groups > 0 ? '✓' : '(none)');
-  if (groups < 1) errors.push('Group did not create a container node');
-  // fit the view so the container isn't tucked under the toolbar, then select it
-  await page.locator('.designer-canvas .react-flow__controls-fitview').click().catch(() => {});
-  await page.waitForTimeout(250);
-  await page.locator('.designer-canvas .group-header').first().click();
-  await page.waitForTimeout(150);
+  console.log('group nodes after Group:', groups, groups === importedGroups + 1 ? '✓' : `(expected ${importedGroups + 1})`);
+  if (groups !== importedGroups + 1) errors.push('Group did not add a container node');
+  // grouping auto-selects the new container → Ungroup is immediately enabled
   const ungroupBtn = page.locator('.designer button:has-text("Ungroup")').first();
   if (await ungroupBtn.isEnabled()) {
     await ungroupBtn.click();
     await page.waitForTimeout(250);
     const gone = await page.locator('.designer-canvas .group-node').count();
-    console.log('group nodes after Ungroup:', gone, gone === 0 ? '✓' : '(still present)');
-    if (gone !== 0) errors.push('Ungroup did not dissolve the container');
-  } else console.log('ungroup button disabled (container not selected)');
-} else console.log('group button disabled — skipping group/ungroup check');
+    console.log('group nodes after Ungroup:', gone, gone === importedGroups ? '✓' : `(expected ${importedGroups})`);
+    if (gone !== importedGroups) errors.push('Ungroup did not dissolve the container');
+  } else { console.log('ungroup button disabled after Group'); errors.push('Ungroup button stayed disabled after Group'); }
+} else { console.log('group button disabled'); errors.push('Group button stayed disabled with 2 free nodes selected'); }
 
 // select first node -> inspector -> change shape + color
-await page.locator('.designer-canvas .react-flow__node').first().click();
+await page.locator('.designer-canvas .react-flow__node').first().click({ force: true });
 await page.waitForTimeout(150);
 const insp = await page.locator('.inspector-field select').count();
 console.log('inspector open:', insp > 0 ? 'yes ✓' : 'no');

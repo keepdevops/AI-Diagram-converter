@@ -64,8 +64,8 @@ export function setPositions(model, posById) {
 
 // -- container grouping ------------------------------------------------------
 
-const GROUP_PAD = 24;
-const GROUP_HEADER = 26;
+export const GROUP_PAD = 24;
+export const GROUP_HEADER = 26;
 export const isContainer = (model, id) => model.nodes.some((n) => n.parent === id);
 
 // Wrap the given top-level nodes in a new package container that bounds them.

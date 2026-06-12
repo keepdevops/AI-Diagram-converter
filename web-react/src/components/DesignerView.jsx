@@ -135,7 +135,9 @@ export default function DesignerView({ text, onApply, setStatus }) {
   const onGroup = useCallback(() => {
     if (groupable.length < 2) return;
     const m = groupNodes(modelRef.current, groupable);
-    commit(m); setSelected(null); setSelectedIds([]);
+    commit(m);
+    setSelected({ kind: 'node', node: m.nodes[0] }); // select the new container
+    setSelectedIds([]);
   }, [groupable, commit]);
   const onUngroup = useCallback(() => {
     if (!selContainer) return;
