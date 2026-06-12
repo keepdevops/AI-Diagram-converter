@@ -12,22 +12,30 @@ import { toPng, toSvg } from 'html-to-image';
 import '@xyflow/react/dist/style.css';
 import { toReactFlow, uid } from '../lib/graphModel.js';
 import ShapeNode from './ShapeNode.jsx';
+import GroupNode from './GroupNode.jsx';
 import EditableEdge from './EditableEdge.jsx';
 import { DRAG_TYPE } from './Palette.jsx';
 
-const nodeTypes = { shape: ShapeNode };
+const nodeTypes = { shape: ShapeNode, group: GroupNode };
 const edgeTypes = { editable: EditableEdge };
 const PAD = 40;
 
 function rfToModel(base, nodes, edges) {
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
   return {
     ...base,
-    nodes: nodes.map((n) => ({
-      id: n.id, label: n.data.label, kind: n.data.kind || 'box', color: n.data.color || null,
-      x: Math.round(n.position.x), y: Math.round(n.position.y),
-      w: Math.round(n.measured?.width || n.width || 140),
-      h: Math.round(n.measured?.height || n.height || 44),
-    })),
+    nodes: nodes.map((n) => {
+      const parent = n.parentId ? byId[n.parentId] : null;
+      const ax = n.position.x + (parent ? parent.position.x : 0);
+      const ay = n.position.y + (parent ? parent.position.y : 0);
+      return {
+        id: n.id, label: n.data.label, kind: n.data.kind || 'box', color: n.data.color || null,
+        parent: n.parentId || undefined,
+        x: Math.round(ax), y: Math.round(ay),
+        w: Math.round(n.measured?.width || n.width || n.style?.width || 140),
+        h: Math.round(n.measured?.height || n.height || n.style?.height || 44),
+      };
+    }),
     edges: edges.map((e) => {
       const dash = e.style?.strokeDasharray;
       const line = dash === '1 4' ? 'dotted' : dash === '5 4' ? 'dashed' : 'solid';
@@ -46,7 +54,7 @@ const downloadDataUrl = (dataUrl, name) => {
   document.body.appendChild(a); a.click(); a.remove();
 };
 
-export default function DesignerCanvas({ model, resetKey, onModel, onSelect, onAddShape, exportRef }) {
+export default function DesignerCanvas({ model, resetKey, onModel, onSelect, onSelectIds, onAddShape, exportRef }) {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const nodesRef = useRef([]);
@@ -100,7 +108,8 @@ export default function DesignerCanvas({ model, resetKey, onModel, onSelect, onA
     const m = modelRef.current.edges.find((x) => x.id === edge.id);
     if (m) onSelect?.({ kind: 'edge', edge: m });
   }, [onSelect]);
-  const onPaneClick = useCallback(() => onSelect?.(null), [onSelect]);
+  const onPaneClick = useCallback(() => { onSelect?.(null); onSelectIds?.([]); }, [onSelect, onSelectIds]);
+  const onSelectionChange = useCallback(({ nodes: sel }) => onSelectIds?.(sel.map((n) => n.id)), [onSelectIds]);
 
   const onDragOver = useCallback((e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);
   const onDrop = useCallback((e) => {
@@ -141,6 +150,7 @@ export default function DesignerCanvas({ model, resetKey, onModel, onSelect, onA
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
+        onSelectionChange={onSelectionChange}
         deleteKeyCode={['Delete', 'Backspace']}
         fitView
         proOptions={{ hideAttribution: true }}

@@ -8,39 +8,82 @@ const q = (s) => `"${String(s).replace(/"/g, "'")}"`;
 // PlantUML element keyword per visual shape kind.
 const KEYWORD = {
   box: 'rectangle', rounded: 'card', actor: 'actor', database: 'database',
-  decision: 'rectangle', package: 'package', note: 'card', component: 'component', node: 'node',
+  decision: 'rectangle', package: 'package', note: 'note', component: 'component', node: 'node',
 };
 const edgeArrow = (e) => {
-  const head = e.arrow === false ? '-' : '>';
+  const head = e.arrow === false ? '' : '>';
   const line = (e.line === 'dotted' || e.line === 'dashed' || e.dashed) ? '..' : '--';
-  return `${line}${head === '-' ? '' : head}` || '-->';
+  return `${line}${head}`;
 };
 
 // -- box-and-arrow -----------------------------------------------------------
 
+const colorOf = (n) => (n.color ? ` ${n.color.startsWith('#') ? n.color : `#${n.color}`}` : '');
+
 function boxToPlantuml(model) {
-  const out = ['@startuml'];
+  const kindById = Object.fromEntries(model.nodes.map((n) => [n.id, n.kind || 'box']));
+  const children = {};       // containerId -> [child nodes]
+  const top = [];
   for (const n of model.nodes) {
-    const kw = KEYWORD[n.kind] || 'rectangle';
-    const color = n.color ? ` ${n.color.startsWith('#') ? n.color : `#${n.color}`}` : '';
-    const stereo = n.kind === 'decision' ? ' <<decision>>' : '';
-    out.push(`${kw} ${q(n.label)} as ${aliasOf(n.id)}${stereo}${color}`);
+    if (n.parent) (children[n.parent] ||= []).push(n);
+    else top.push(n);
   }
+
+  const out = ['@startuml'];
+  const decl = (n, indent) => {
+    if (n.kind === 'package') {
+      // A real package container with its grouped children nested inside.
+      out.push(`${indent}package ${q(n.label)} as ${aliasOf(n.id)}${colorOf(n)} {`);
+      for (const c of (children[n.id] || [])) decl(c, `${indent}  `);
+      out.push(`${indent}}`);
+    } else {
+      const kw = KEYWORD[n.kind] || 'rectangle';
+      const stereo = n.kind === 'decision' ? ' <<decision>>' : '';
+      out.push(`${indent}${kw} ${q(n.label)} as ${aliasOf(n.id)}${stereo}${colorOf(n)}`);
+    }
+  };
+  for (const n of top) decl(n, '');
+
   if (model.nodes.length && model.edges.length) out.push('');
   for (const e of model.edges) {
-    out.push(`${aliasOf(e.source)} ${edgeArrow(e)} ${aliasOf(e.target)}${e.label ? ` : ${e.label}` : ''}`);
+    // Notes attach with a dotted '..' link (no arrowhead), per PlantUML.
+    const isNote = kindById[e.source] === 'note' || kindById[e.target] === 'note';
+    const conn = isNote ? '..' : edgeArrow(e);
+    out.push(`${aliasOf(e.source)} ${conn} ${aliasOf(e.target)}${e.label ? ` : ${e.label}` : ''}`);
   }
   out.push('@enduml');
   return out.join('\n');
 }
 
 function boxToMermaid(model) {
+  const children = {};       // containerId -> [child nodes]
+  const top = [];
+  for (const n of model.nodes) {
+    if (n.parent) (children[n.parent] ||= []).push(n);
+    else top.push(n);
+  }
+  // A container is any node that actually has children (matches graphModel's
+  // isContainer); a lone 'package' shape stays a normal node.
+  const containerIds = new Set(Object.keys(children).filter((id) => children[id].length));
+
   const out = ['flowchart TD'];
-  for (const n of model.nodes) out.push(`  ${aliasOf(n.id)}["${n.label}"]`);
+  const decl = (n, indent) => {
+    if (containerIds.has(n.id)) {
+      // Mermaid has no package node — wrap children in a subgraph instead.
+      out.push(`${indent}subgraph ${aliasOf(n.id)}["${n.label}"]`);
+      for (const c of children[n.id]) decl(c, `${indent}  `);
+      out.push(`${indent}end`);
+    } else {
+      out.push(`${indent}${aliasOf(n.id)}["${n.label}"]`);
+    }
+  };
+  for (const n of top) decl(n, '  ');
+
   for (const e of model.edges) {
+    if (containerIds.has(e.source) || containerIds.has(e.target)) continue;
     const arrow = e.dashed ? '-.->' : '-->';
-    const lbl = e.label ? `${e.dashed ? '' : ''}${arrow}|${e.label}|` : arrow;
-    out.push(`  ${aliasOf(e.source)} ${e.label ? arrow + '|' + e.label + '|' : arrow} ${aliasOf(e.target)}`);
+    const conn = e.label ? `${arrow}|${e.label}|` : arrow;
+    out.push(`  ${aliasOf(e.source)} ${conn} ${aliasOf(e.target)}`);
   }
   return out.join('\n');
 }

@@ -62,14 +62,68 @@ export function setPositions(model, posById) {
 
 // -- React Flow adapters -----------------------------------------------------
 
+// -- container grouping ------------------------------------------------------
+
+const GROUP_PAD = 24;
+const GROUP_HEADER = 26;
+export const isContainer = (model, id) => model.nodes.some((n) => n.parent === id);
+
+// Wrap the given top-level nodes in a new package container that bounds them.
+export function groupNodes(model, ids) {
+  const sel = model.nodes.filter((n) => ids.includes(n.id) && !n.parent && !isContainer(model, n.id));
+  if (sel.length < 1) return model;
+  const minX = Math.min(...sel.map((n) => n.x || 0));
+  const minY = Math.min(...sel.map((n) => n.y || 0));
+  const maxX = Math.max(...sel.map((n) => (n.x || 0) + (n.w || 140)));
+  const maxY = Math.max(...sel.map((n) => (n.y || 0) + (n.h || 44)));
+  const cid = uid('g');
+  const container = {
+    id: cid, label: 'Group', kind: 'package', color: null,
+    x: minX - GROUP_PAD, y: minY - GROUP_PAD - GROUP_HEADER,
+    w: (maxX - minX) + 2 * GROUP_PAD, h: (maxY - minY) + 2 * GROUP_PAD + GROUP_HEADER,
+  };
+  const idset = new Set(sel.map((n) => n.id));
+  const nodes = model.nodes.map((n) => (idset.has(n.id) ? { ...n, parent: cid } : n));
+  return { ...model, nodes: [container, ...nodes] };
+}
+
+// Dissolve a container: detach its children (positions are already absolute in
+// the model) and remove the container node + any edges touching it.
+export function ungroupNode(model, cid) {
+  return {
+    ...model,
+    nodes: model.nodes.filter((n) => n.id !== cid).map((n) => (n.parent === cid ? { ...n, parent: undefined } : n)),
+    edges: model.edges.filter((e) => e.source !== cid && e.target !== cid),
+  };
+}
+
+// -- React Flow adapters -----------------------------------------------------
+
 // `nodeType` lets the Designer use the richer 'shape' node; Graph uses 'editable'.
+// Container (package-with-children) nodes become React Flow group nodes; their
+// children get parentId + relative positions so they move/stay together.
 export function toReactFlow(model, nodeType = 'editable') {
-  const nodes = model.nodes.map((n) => ({
-    id: n.id,
-    position: { x: n.x || 0, y: n.y || 0 },
-    data: { label: n.label, kind: n.kind || 'box', color: n.color || null },
-    type: nodeType,
-  }));
+  const byId = Object.fromEntries(model.nodes.map((n) => [n.id, n]));
+  const containerIds = new Set(model.nodes.filter((n) => isContainer(model, n.id)).map((n) => n.id));
+  const ordered = [
+    ...model.nodes.filter((n) => containerIds.has(n.id)), // parents first
+    ...model.nodes.filter((n) => !containerIds.has(n.id)),
+  ];
+  const nodes = ordered.map((n) => {
+    const isCont = containerIds.has(n.id);
+    const parent = n.parent ? byId[n.parent] : null;
+    const pos = parent
+      ? { x: (n.x || 0) - (parent.x || 0), y: (n.y || 0) - (parent.y || 0) }
+      : { x: n.x || 0, y: n.y || 0 };
+    const node = {
+      id: n.id, position: pos,
+      data: { label: n.label, kind: n.kind || 'box', color: n.color || null },
+      type: isCont ? 'group' : nodeType,
+    };
+    if (n.parent) { node.parentId = n.parent; node.extent = 'parent'; }
+    if (isCont) node.style = { width: n.w || 220, height: n.h || 160 };
+    return node;
+  });
   const edges = model.edges.map((e) => ({
     id: e.id,
     source: e.source,
