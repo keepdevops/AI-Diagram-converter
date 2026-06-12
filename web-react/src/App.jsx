@@ -99,6 +99,15 @@ export default function App() {
     if (name && EXAMPLES[name]) onEditText(EXAMPLES[name]);
   }, [onEditText]);
 
+  // Clear the pasted code/text in the editor. Confirm first so content isn't
+  // lost by accident; clearing the text also drops any imported image preview.
+  const onClearEditor = useCallback(() => {
+    if (!text.trim()) { setStatus('Editor already empty', 'info'); return; }
+    if (!window.confirm('Clear the editor content?')) return;
+    onEditText('');
+    setStatus('Cleared editor', 'info');
+  }, [text, onEditText, setStatus]);
+
   const serverBase = (server.replace(/\/+$/, '')) || DEFAULT_SERVER;
 
   const onViewRender = useCallback(() => {
@@ -260,6 +269,7 @@ export default function App() {
         <>
           <EditorBar
             onExample={onExample}
+            onClear={onClearEditor}
             onFix={onFix}
             onGenerate={onGenerate}
             running={agent.running}

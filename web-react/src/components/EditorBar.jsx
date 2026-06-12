@@ -5,7 +5,7 @@
 import { EXAMPLES } from '../lib/examples.js';
 
 export default function EditorBar({
-  onExample, onFix, onGenerate, running, format, onFormat, onViewRender,
+  onExample, onClear, onFix, onGenerate, running, format, onFormat, onViewRender,
 }) {
   return (
     <div className="convert-bar editor-bar">
@@ -23,6 +23,9 @@ export default function EditorBar({
         title="Repair the current diagram via the swarm">Fix ✦</button>
       <button type="button" onClick={onGenerate} disabled={running}
         title="Generate a diagram from a description">Generate ✦</button>
+
+      <button type="button" onClick={onClear}
+        title="Clear the pasted code/text in the editor">Clear</button>
 
       <span className="spacer" />
 
