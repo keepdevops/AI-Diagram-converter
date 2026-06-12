@@ -1,0 +1,38 @@
+# ---- Node / React (web-react, web) ----
+node_modules/
+dist/
+.vite/
+*.local
+
+# ---- Python (diagram_agent, matrix_client, plantuml-editor) ----
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Logs ----
+*.log
+scripts/logs/
+
+# ---- Large / downloadable artifacts ----
+# PlantUML jar (~29MB) is a downloadable artifact, not source
+plantuml.jar
+
+# ---- Editor / OS ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+Thumbs.db
