@@ -6,9 +6,28 @@ Start, stop, and check the PlantUML editor stack **for local host-process dev**.
 matrix-safe (:8765, local LLM)  ←  diagram-agent bridge (:8770)  ←  web (:5180)
 ```
 
-> **Deploying (air-gapped) or running in containers?** Use Docker Compose instead —
-> see [`../DEPLOY.md`](../DEPLOY.md). These scripts are the lightweight
-> run-on-the-host path for development. Renderer matrix: `scripts/test-renderers.sh`.
+> **Deploying (air-gapped) or running in containers?** Use the Docker wrappers
+> below (or Compose directly — see [`../DEPLOY.md`](../DEPLOY.md)). The `start/stop`
+> scripts here are the lightweight run-on-the-host path for development.
+
+## Docker wrappers
+
+Thin wrappers over Docker Compose so you don't memorize the `--profile` / `-f` flags.
+`MODE` is `server` (external render container) or `bridge` (jar inside the bridge,
+no external image). `--llm` adds the matrix-safe backend for Fix/Generate.
+
+| Script | What it does |
+|---|---|
+| `scripts/docker-build.sh [server\|bridge\|both]` | Build the images (server mode also pulls the render image). |
+| `scripts/docker-up.sh [server\|bridge] [--llm]` | Launch the stack and wait until it serves on `WEB_PORT`. |
+| `scripts/docker-down.sh [server\|bridge] [-v]` | Stop/remove the stack (`-v` also drops volumes). |
+| `scripts/test-renderers.sh [server\|bridge\|both]` | Renderer conformance matrix (build + assert contract). |
+
+```bash
+scripts/docker-up.sh bridge          # build + run, open http://localhost:8088/
+scripts/docker-up.sh server --llm    # external render + LLM
+scripts/docker-down.sh bridge        # shut down
+```
 
 | Script | What it does |
 |---|---|
