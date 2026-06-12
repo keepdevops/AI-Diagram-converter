@@ -1,0 +1,17 @@
+# Keep build contexts small and reproducible.
+.git
+**/node_modules
+web-react/dist
+scripts/.pids
+scripts/logs
+__pycache__
+**/__pycache__
+*.pyc
+
+# plantuml.jar is needed by the `bridge` render module's image
+# (docker/bridge-jar.Dockerfile); kept in the context. The server/frontend images
+# simply don't COPY it.
+
+# Local-only
+.env
+models

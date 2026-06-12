@@ -36,3 +36,7 @@ plantuml.jar
 .vscode/
 *.swp
 Thumbs.db
+
+# ---- PID files / image tarballs ----
+scripts/.pids/
+*.tar

@@ -1,0 +1,36 @@
+# Renderer conformance matrix. Builds the air-gapped stack in each render mode and
+# asserts the preview + validation contract, so no renderer path silently rots.
+name: renderers
+
+on:
+  push:
+    branches: [main, "main-*"]
+  pull_request:
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [server, bridge]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run renderer conformance (${{ matrix.mode }})
+        run: scripts/test-renderers.sh ${{ matrix.mode }}
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Offline contract test (no services)
+        run: python -m unittest diagram_agent.renderers.test_contract -v

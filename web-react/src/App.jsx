@@ -8,13 +8,19 @@ import Preview, { imageUrl } from './components/Preview.jsx';
 import SwarmLog from './components/SwarmLog.jsx';
 import ConvertPanel from './components/ConvertPanel.jsx';
 import Split from './components/Split.jsx';
-import FileMenu from './components/FileMenu.jsx';
+import EditorBar from './components/EditorBar.jsx';
 import ImageView from './components/ImageView.jsx';
 import { detectFormat } from './lib/mdBlocks.js';
 import { openFile, saveFileAs, saveToHandle, supportsFS } from './lib/fileAccess.js';
 
 // mermaid is ~1.7 MB; load it only when a Mermaid diagram is actually previewed.
 const MermaidView = lazy(() => import('./components/MermaidView.jsx'));
+// React Flow + dagre are heavy; load the Graph editor only when its tab is opened.
+const GraphView = lazy(() => import('./components/GraphView.jsx'));
+// CodeMirror language packs load with the Code tab.
+const CodeView = lazy(() => import('./components/CodeView.jsx'));
+// The visual Designer (React Flow + palette/inspector) loads with its tab.
+const DesignerView = lazy(() => import('./components/DesignerView.jsx'));
 import { useAgent } from './hooks/useAgent.js';
 import { agentBase, setAgentBase } from './lib/agentClient.js';
 import { DEFAULT_DIAGRAM } from './lib/examples.js';
@@ -25,7 +31,9 @@ const KEYS = {
   server: 'plantuml-editor.server',
   format: 'plantuml-editor.format',
 };
-const DEFAULT_SERVER = 'https://www.plantuml.com/plantuml';
+// Same-origin by default so an air-gapped nginx can proxy /plantuml -> the render
+// service (no external host reachable). Override at build time with VITE_PLANTUML_SERVER.
+const DEFAULT_SERVER = import.meta.env.VITE_PLANTUML_SERVER || '/plantuml';
 
 export default function App() {
   const [text, setText] = useState(() => localStorage.getItem(KEYS.text) || DEFAULT_DIAGRAM);
@@ -35,7 +43,8 @@ export default function App() {
   const [status, setStatusState] = useState({ text: 'Ready', kind: 'info' });
   const [swarmInfo, setSwarmInfo] = useState(undefined); // undefined=checking, null=offline
   const [logOpen, setLogOpen] = useState(false);
-  const [view, setView] = useState('editor'); // 'editor' | 'convert'
+  const [view, setView] = useState('editor'); // 'editor' | 'convert' | 'graph' | 'code'
+  const [pendingGraphImport, setPendingGraphImport] = useState(false);
   const encodedRef = useRef('');
 
   // File document state.
@@ -200,20 +209,10 @@ export default function App() {
   return (
     <div className="app">
       <Toolbar
-        server={server}
-        onServer={setServer}
-        format={format}
-        onFormat={setFormat}
-        onExample={onExample}
-        agentBaseValue={agentUrl}
-        onAgentBase={onAgentBase}
-        swarmInfo={swarmInfo}
-        running={agent.running}
-        onFix={onFix}
-        onGenerate={onGenerate}
-        onViewRender={onViewRender}
         view={view}
         onView={setView}
+        swarmInfo={swarmInfo}
+        settings={{ agentBaseValue: agentUrl, onAgentBase, server, onServer: setServer }}
         file={{
           name: fileName,
           dirty,
@@ -228,12 +227,47 @@ export default function App() {
         }}
       />
 
-      {view === 'convert' ? (
+      {view === 'graph' ? (
+        <Suspense fallback={<div className="preview-empty" style={{ padding: 24 }}>Loading graph editor…</div>}>
+          <GraphView
+            text={text}
+            forceImport={pendingGraphImport}
+            onConsumed={() => setPendingGraphImport(false)}
+            onApply={(t) => { onEditText(t); setStatus('Applied graph to editor', 'ok'); }}
+            setStatus={setStatus}
+          />
+        </Suspense>
+      ) : view === 'designer' ? (
+        <Suspense fallback={<div className="preview-empty" style={{ padding: 24 }}>Loading designer…</div>}>
+          <DesignerView
+            text={text}
+            onApply={(t) => { onEditText(t); setStatus('Applied design to editor', 'ok'); }}
+            setStatus={setStatus}
+          />
+        </Suspense>
+      ) : view === 'code' ? (
+        <Suspense fallback={<div className="preview-empty" style={{ padding: 24 }}>Loading code view…</div>}>
+          <CodeView
+            onOpenInEditor={(t) => { onEditText(t); setView('editor'); setStatus('Loaded generated diagram', 'ok'); }}
+            onOpenInGraph={(t) => { onEditText(t); setPendingGraphImport(true); setView('graph'); }}
+          />
+        </Suspense>
+      ) : view === 'convert' ? (
         <ConvertPanel
           onOpenInEditor={(t) => { onEditText(t); setView('editor'); setStatus('Loaded converted diagram', 'ok'); }}
         />
       ) : (
         <>
+          <EditorBar
+            onExample={onExample}
+            onFix={onFix}
+            onGenerate={onGenerate}
+            running={agent.running}
+            format={format}
+            onFormat={setFormat}
+            onViewRender={onViewRender}
+          />
+
           <SwarmLog
             open={logOpen}
             title={agent.title}
@@ -249,7 +283,7 @@ export default function App() {
                 <Editor value={text} onChange={onEditText} />
               </div>
               {importedImage ? (
-                <ImageView url={importedImage.url} name={fileName} />
+                <ImageView image={importedImage} name={fileName} />
               ) : detectFormat(text) === 'mermaid' ? (
                 <Suspense fallback={<section className="preview-pane"><div className="preview-empty">Loading Mermaid…</div></section>}>
                   <MermaidView text={text} onStatus={setStatus} />

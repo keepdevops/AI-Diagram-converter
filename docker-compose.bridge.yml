@@ -1,0 +1,24 @@
+# `bridge` render module override: the committed plantuml.jar runs inside the
+# bridge container (-picoweb + Graphviz). No `render` service, no external render
+# image — the strongest air-gap story (reproducible from this repo's jar).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.bridge.yml up -d
+#   (add --profile llm for AI Fix/Generate)
+services:
+  bridge:
+    build:
+      dockerfile: docker/bridge-jar.Dockerfile
+    image: plantuml-editor-bridge-jar:local
+    environment:
+      RENDER_JAR: "1"
+      PICOWEB_PORT: "8080"
+      PLANTUML_RENDERER: "server"
+      RENDER_ENGINE: "plantuml-server"
+      # Fix-loop validator talks to the in-container picoweb.
+      PLANTUML_SERVER: "http://127.0.0.1:8080"
+    mem_limit: 1g  # this container also runs the JVM picoweb + Graphviz
+
+  frontend:
+    environment:
+      # Preview: nginx /plantuml -> the jar's picoweb in the bridge container.
+      RENDER_PROXY_PASS: "http://bridge:8080/"

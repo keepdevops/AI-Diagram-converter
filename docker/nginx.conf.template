@@ -1,0 +1,35 @@
+# nginx for the air-gapped frontend. Single origin: serves the built SPA and
+# reverse-proxies the two backends so the browser never needs an external host.
+#
+# Rendered by the nginx:alpine entrypoint via envsubst (only RENDER_PROXY_PASS is
+# substituted — see NGINX_ENVSUBST_FILTER in the compose/Dockerfile). nginx runtime
+# variables like $uri are left untouched.
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Static SPA assets (includes the lazy-loaded mermaid / plantuml.js chunks).
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Diagram-agent bridge (Fix / Generate / Convert / health). Full path preserved.
+    location /api/ {
+        proxy_pass http://bridge:8770;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 120s;
+    }
+
+    # PlantUML render service. RENDER_PROXY_PASS encodes the engine difference:
+    #   plantuml-server -> http://render:8080/   (trailing slash strips /plantuml/)
+    #   kroki           -> http://render:8000     (keeps /plantuml/svg/...)
+    location /plantuml/ {
+        proxy_pass ${RENDER_PROXY_PASS};
+        proxy_set_header Host $host;
+        proxy_read_timeout 60s;
+    }
+}

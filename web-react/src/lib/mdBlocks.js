@@ -32,15 +32,19 @@ export function detectFormat(code) {
 // (so pasting raw diagram text "just works").
 export function extractBlocks(input) {
   const src = input || '';
-  const fenceRe = /```([A-Za-z0-9_-]*)\n([\s\S]*?)```/g;
+  // Tolerant info string ([^\n]*) so fences like ```diagram:sequence or
+  // ```js {.attr} still pair correctly — a strict lang pattern would fail to
+  // match such an opening fence and desync every fence after it. The lang is the
+  // first whitespace-delimited token of the info string.
+  const fenceRe = /```([^\n]*)\n([\s\S]*?)```/g;
   const blocks = [];
   let m;
   while ((m = fenceRe.exec(src)) !== null) {
-    const lang = (m[1] || '').toLowerCase();
+    const lang = (m[1] || '').trim().toLowerCase().split(/\s+/)[0];
     const code = m[2].replace(/\n$/, '');
     if (!code.trim()) continue;
     const fmt = FENCE_LANGS[lang] || detectFormat(code);
-    if (fmt === 'unknown') continue; // skip non-diagram code fences
+    if (fmt === 'unknown') continue; // skip non-diagram code fences (incl. prompts)
     blocks.push({ lang: fmt, code, fenced: true });
   }
   if (blocks.length > 0) return blocks;
