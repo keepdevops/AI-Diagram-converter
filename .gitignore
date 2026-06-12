@@ -27,8 +27,9 @@ env/
 scripts/logs/
 
 # ---- Large / downloadable artifacts ----
-# PlantUML jar (~29MB) is a downloadable artifact, not source
-plantuml.jar
+# NOTE: plantuml.jar (~28MB, v1.2026.6) is intentionally TRACKED — the `bridge`
+# render module builds it into the bridge image (docker/bridge-jar.Dockerfile) so
+# the stack is reproducible fully offline from this repo alone. Un-ignored on purpose.
 
 # ---- Editor / OS ----
 .DS_Store
@@ -36,3 +37,7 @@ plantuml.jar
 .vscode/
 *.swp
 Thumbs.db
+
+# ---- PID files / image tarballs ----
+scripts/.pids/
+*.tar

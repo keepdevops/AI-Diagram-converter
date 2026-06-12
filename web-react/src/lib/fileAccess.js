@@ -23,24 +23,45 @@ const OPEN_TYPES = [{
 
 const IMAGE_EXTS = ['svg', 'png', 'jpg', 'jpeg'];
 const ext = (name) => (name.split('.').pop() || '').toLowerCase();
-const mimeFromExt = (e) => ({ svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg' }[e] || '');
+
+// An <svg> with only a viewBox (no width/height) renders at 0×0 inside an <img>.
+// Derive width/height from the viewBox so it displays at a real size.
+function ensureSvgSize(svg) {
+  return svg.replace(/<svg\b([^>]*)>/i, (m, attrs) => {
+    const hasW = /\bwidth\s*=/.test(attrs);
+    const hasH = /\bheight\s*=/.test(attrs);
+    if (hasW && hasH) return m;
+    const vb = attrs.match(/viewBox\s*=\s*["']\s*[\d.eE+-]+\s+[\d.eE+-]+\s+([\d.eE+-]+)\s+([\d.eE+-]+)/i);
+    if (!vb) return m;
+    let a = attrs;
+    if (!hasW) a += ` width="${vb[1]}"`;
+    if (!hasH) a += ` height="${vb[2]}"`;
+    return `<svg${a}>`;
+  });
+}
 
 // Returns { name, handle, source } for editable files, or { name, handle, image }
 // for images with no embedded source (displayed, not edited). svg/png are probed
-// for embedded source first; jpg is always display-only.
+// for embedded source first; jpg is always display-only. SVG is carried as inline
+// markup (reliable sizing); png/jpg as an object URL.
 async function readFileObject(file, handle) {
   const name = file.name;
   const e = ext(name);
   if (IMAGE_EXTS.includes(e)) {
-    let source = null;
-    try {
-      if (e === 'png') source = parseOpened(name, null, new Uint8Array(await file.arrayBuffer()));
-      else if (e === 'svg') source = parseOpened(name, await file.text(), null);
-    } catch (err) {
-      source = null; // no embedded source -> fall through to display the image
+    if (e === 'svg') {
+      const text = await file.text();
+      try {
+        const source = parseOpened(name, text, null);
+        if (source) return { name, handle, source };
+      } catch (err) { /* no embedded source -> display the svg */ }
+      return { name, handle, image: { svg: ensureSvgSize(text) } };
     }
-    if (source) return { name, handle, source };
-    return { name, handle, image: { url: URL.createObjectURL(file), mime: file.type || mimeFromExt(e) } };
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const source = e === 'png' ? parseOpened(name, null, bytes) : null;
+      if (source) return { name, handle, source };
+    } catch (err) { /* no embedded source -> display the image */ }
+    return { name, handle, image: { url: URL.createObjectURL(file) } };
   }
   return { name, handle, source: parseOpened(name, await file.text(), null) };
 }

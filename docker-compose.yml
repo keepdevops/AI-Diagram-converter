@@ -1,0 +1,68 @@
+# Air-gapped PlantUML + Mermaid editor.
+#
+#   Core (always):     frontend (nginx) + bridge (diagram-agent)
+#   Profile render-server: a PlantUML render service (plantuml-server or kroki)
+#   Profile llm:           the matrix-safe LLM backend (Fix / Generate)
+#
+# Typical offline start:
+#   docker compose --profile render-server up -d
+#   docker compose --profile render-server --profile llm up -d   # + AI features
+#
+# Engine selection (see .env.example) is via RENDER_IMAGE / RENDER_PROXY_PASS /
+# PLANTUML_SERVER so the same file serves both plantuml-server and kroki.
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    image: plantuml-editor-frontend:local
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    environment:
+      # How nginx reaches the render service (engine-specific path handling):
+      #   plantuml-server -> http://render:8080/   kroki -> http://render:8000
+      RENDER_PROXY_PASS: "${RENDER_PROXY_PASS:-http://render:8080/}"
+    depends_on:
+      - bridge
+    restart: unless-stopped
+    mem_limit: 128m
+
+  bridge:
+    build:
+      context: .
+      dockerfile: docker/bridge.Dockerfile
+    image: plantuml-editor-bridge:local
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8770"
+      PLANTUML_RENDERER: "${PLANTUML_RENDERER:-server}"
+      # Validation oracle target. plantuml-server -> http://render:8080
+      #                            kroki           -> http://render:8000/plantuml
+      PLANTUML_SERVER: "${PLANTUML_SERVER:-http://render:8080}"
+      MATRIX_SAFE_URL: "${MATRIX_SAFE_URL:-http://matrix-safe:8765}"
+      DIAGRAM_AGENT: "${DIAGRAM_AGENT:-local-coder-14b.json}"
+    restart: unless-stopped
+    # Lean in server/client modes (stdlib Python). The bridge override raises this
+    # because that mode also runs the JVM picoweb in this container.
+    mem_limit: 256m
+
+  render:
+    profiles: ["render-server"]
+    # plantuml/plantuml-server:jetty (default) or yuzutech/kroki — see .env.example.
+    image: "${RENDER_IMAGE:-plantuml/plantuml-server:jetty}"
+    expose:
+      - "8080"
+    restart: unless-stopped
+    mem_limit: 1g  # JVM + Graphviz
+
+  matrix-safe:
+    profiles: ["llm"]
+    # Image built/published by the separate matrix-safe project. Weights are
+    # mounted, never baked in, so this stays out of the editor's own images.
+    image: "${MATRIX_SAFE_IMAGE:-matrix-safe:local}"
+    expose:
+      - "8765"
+    volumes:
+      - "${MODEL_DIR:-./models}:/models:ro"
+    restart: unless-stopped

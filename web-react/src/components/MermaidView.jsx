@@ -6,9 +6,16 @@ import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import ZoomPane from './ZoomPane.jsx';
 
-// Initialise once. Dark theme matches the app; 'loose' lets labels use richer
-// text. startOnLoad off — we drive render() ourselves.
-mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+// Initialise once. Dark theme matches the app; startOnLoad off — we drive
+// render() ourselves. securityLevel defaults to 'strict' (HTML in labels is
+// encoded, click handlers disabled) so an air-gapped/locked-down deployment is
+// safe by default. Set VITE_MERMAID_SECURITY=loose to re-enable rich HTML labels
+// and clickable nodes for trusted single-user use.
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  securityLevel: import.meta.env.VITE_MERMAID_SECURITY || 'strict',
+});
 
 const DEBOUNCE_MS = 400;
 

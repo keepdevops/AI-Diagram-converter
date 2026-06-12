@@ -116,6 +116,40 @@ html, body, #root {
 .badge.err { color: var(--color-error); border-color: var(--color-error); }
 .badge.pending { color: var(--color-warn); border-color: var(--color-warn); }
 
+/* Popover (File menu, Settings) */
+.popover-wrap { position: relative; display: inline-flex; }
+.popover-trigger.on { border-color: var(--color-accent); color: var(--color-text); }
+.popover {
+  position: absolute; top: calc(100% + 4px); z-index: 50;
+  min-width: 220px; padding: var(--space-2);
+  background: var(--color-panel-2); border: 1px solid var(--color-border);
+  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.popover.left { left: 0; }
+.popover.right { right: 0; }
+.menu { display: flex; flex-direction: column; }
+.menu-item {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-4);
+  background: none; border: none; border-radius: var(--radius);
+  color: var(--color-text); font-size: 12px; text-align: left;
+  padding: var(--space-1) var(--space-2); cursor: pointer;
+}
+.menu-item:hover:not(:disabled) { background: var(--color-panel); }
+.menu-item .kbd { color: var(--color-muted); font-size: 11px; }
+.menu-sep { height: 1px; background: var(--color-border); margin: var(--space-1) 0; }
+.menu-label { font-size: 11px; color: var(--color-muted); padding: 2px var(--space-2); }
+.menu-saveas { display: flex; gap: var(--space-1); padding: 0 var(--space-2) var(--space-1); }
+.menu-saveas select { flex: 1; min-width: 0; }
+.settings { display: flex; flex-direction: column; gap: var(--space-2); min-width: 280px; }
+.settings-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 12px; color: var(--color-muted); }
+.settings-field input {
+  background: var(--color-panel); color: var(--color-text);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2); font-size: 12px;
+}
+.settings-hint { font-size: 11px; color: var(--color-muted); margin: 0; }
+.toolbar { flex-wrap: nowrap; }
+
 /* Workspace ------------------------------------------------------------ */
 .workspace { flex: 1 1 auto; display: flex; min-height: 0; }
 .editor-pane { flex: 1; min-height: 0; overflow: hidden; }
@@ -262,3 +296,70 @@ html, body, #root {
   .workspace { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .convert-cols { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
 }
+
+/* ---- React Flow theming (Graph + Designer) -------------------------------- */
+.graph-canvas, .designer-canvas { position: absolute; inset: 0; }
+.react-flow__node-default,
+.gnode, .shape {
+  background: var(--color-panel); color: var(--color-text);
+  border: 1px solid var(--color-accent); border-radius: var(--radius);
+  font-size: 12px; padding: 6px 10px;
+}
+.gnode.selected, .shape.selected { outline: 2px solid var(--color-ok); }
+.gnode-input, .gedge-input {
+  background: var(--color-panel-2); color: var(--color-text);
+  border: 1px solid var(--color-accent); border-radius: 4px; font-size: 12px; text-align: center; width: 100%;
+}
+.gedge-label {
+  position: absolute; font-size: 10px; color: var(--color-text);
+  background: var(--color-panel); border: 1px solid var(--color-border);
+  border-radius: 4px; padding: 0 4px; pointer-events: all; cursor: text;
+}
+.gedge-label .muted { color: var(--color-muted); opacity: 0.6; }
+.react-flow__edge-path { stroke: var(--color-muted); stroke-width: 1.5; }
+.react-flow__edge-text { fill: var(--color-text); font-size: 10px; }
+.react-flow__handle { background: var(--color-accent); border: none; width: 8px; height: 8px; }
+.react-flow__controls button { background: var(--color-panel); color: var(--color-text); border-color: var(--color-border); }
+.react-flow__minimap { background: var(--color-panel); }
+
+/* ---- Designer: palette | canvas | inspector ------------------------------- */
+.designer { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.designer-body { flex: 1 1 auto; display: flex; min-height: 0; }
+.designer-stage { flex: 1 1 auto; position: relative; min-width: 0; background: var(--color-panel-2); }
+.palette {
+  width: 130px; flex: 0 0 130px; padding: var(--space-2);
+  background: var(--color-panel); border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto;
+}
+.palette-title, .inspector-title { font-size: 11px; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.palette-item { cursor: grab; min-width: 0; padding: 6px 8px; font-size: 11px; }
+.palette-hint { font-size: 10px; color: var(--color-muted); margin-top: auto; }
+.inspector {
+  width: 210px; flex: 0 0 210px; padding: var(--space-3);
+  background: var(--color-panel); border-left: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto;
+}
+.inspector-empty { font-size: 12px; color: var(--color-muted); }
+.inspector-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 12px; color: var(--color-muted); }
+.inspector-field input, .inspector-field select {
+  background: var(--color-panel-2); color: var(--color-text);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2); font-size: 12px;
+}
+.inspector-chk { display: flex; align-items: center; gap: var(--space-1); font-size: 12px; color: var(--color-text); }
+.inspector-del {
+  margin-top: var(--space-2); background: var(--color-panel-2); color: var(--color-error);
+  border: 1px solid var(--color-error); border-radius: var(--radius); padding: var(--space-1); font-size: 12px; cursor: pointer;
+}
+.swatches { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.swatch { width: 22px; height: 22px; border-radius: var(--radius); border: 1px solid var(--color-border); cursor: pointer; color: var(--color-muted); font-size: 11px; }
+.swatch.on { outline: 2px solid var(--color-text); }
+
+/* Shape variants */
+.shape { min-width: 90px; text-align: center; }
+.shape-rounded { border-radius: 18px; }
+.shape-actor { border-radius: 16px; }
+.shape-database { border-radius: 4px / 14px; }
+.shape-note { clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%); }
+.shape-package { border-top: 3px solid var(--color-accent); }
+.shape-decision { border-radius: 14px; font-style: italic; }
