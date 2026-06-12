@@ -290,7 +290,12 @@ export default function ConvertPanel({ onOpenInEditor }) {
       <div className="convert-cols">
         <Split storageKey="plantuml-editor.convert-split">
           <div className="convert-col">
-            <div className="convert-col-head">Source (Markdown / diagram)</div>
+            <div className="convert-col-head">
+              Source (Markdown / diagram)
+              <span className="spacer" />
+              <button type="button" className="link" disabled={!src}
+                onClick={() => { setSrc(''); setBlockIdx(0); say('Cleared source', 'info'); }}>Clear</button>
+            </div>
             <div className="convert-edit"><Editor value={src} onChange={setSrc} /></div>
           </div>
           <div className="convert-col">
