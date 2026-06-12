@@ -41,7 +41,7 @@ await page.selectOption('.convert-bar label:has-text("Mode") select', 'generate'
 // Clear the source editor and type plain prose (no ```diagram markers).
 const srcEditor = page.locator('.convert-col:has(.convert-col-head:has-text("Source")) .cm-content');
 await srcEditor.click();
-await page.keyboard.press('Meta+A');
+await page.keyboard.press('ControlOrMeta+A'); // cross-platform select-all (Linux CI vs macOS)
 await page.keyboard.press('Backspace');
 await page.keyboard.insertText('Users log in via the app, which checks the database and returns a session token.');
 await page.waitForTimeout(200);
