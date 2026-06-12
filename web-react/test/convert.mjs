@@ -4,7 +4,8 @@
 import { chromium } from 'playwright';
 
 const URL = process.env.SMOKE_URL || 'http://localhost:5180/';
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const channel = process.env.PW_CHANNEL ?? 'chrome'; // empty in CI → bundled chromium
+const browser = await chromium.launch({ ...(channel ? { channel } : {}), headless: true });
 const page = await (await browser.newContext()).newPage();
 const fail = (m) => { console.log('❌ ' + m); process.exitCode = 1; };
 
