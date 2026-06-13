@@ -40,8 +40,17 @@ services:
       # Validation oracle target. plantuml-server -> http://render:8080
       #                            kroki           -> http://render:8000/plantuml
       PLANTUML_SERVER: "${PLANTUML_SERVER:-http://render:8080}"
-      MATRIX_SAFE_URL: "${MATRIX_SAFE_URL:-http://matrix-safe:8765}"
+      # Default LLM = the HOST's Metal-accelerated matrix-safe (macOS Docker has
+      # no in-container GPU, so the in-container LLM is CPU-only/slow). Docker
+      # Desktop proxies host.docker.internal to the host even when matrix-safe
+      # binds 127.0.0.1. For a self-contained in-container CPU LLM instead (e.g.
+      # a Linux/air-gapped host with no host matrix-safe), add
+      #   -f docker-compose.container-llm.yml --profile llm
+      MATRIX_SAFE_URL: "${MATRIX_SAFE_URL:-http://host.docker.internal:8765}"
+      # Host's Metal config (llama_cpp_binary -> host llama-server, GPU).
       DIAGRAM_AGENT: "${DIAGRAM_AGENT:-local-coder-14b.json}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     # Lean in server/client modes (stdlib Python). The bridge override raises this
     # because that mode also runs the JVM picoweb in this container.

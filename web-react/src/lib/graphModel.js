@@ -60,8 +60,6 @@ export function setPositions(model, posById) {
   };
 }
 
-// -- React Flow adapters -----------------------------------------------------
-
 // -- container grouping ------------------------------------------------------
 
 export const GROUP_PAD = 24;

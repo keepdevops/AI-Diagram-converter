@@ -22,12 +22,19 @@ no external image). `--llm` adds the matrix-safe backend for Fix/Generate.
 | `scripts/docker-up.sh [server\|bridge] [--llm]` | Launch the stack and wait until it serves on `WEB_PORT`. |
 | `scripts/docker-down.sh [server\|bridge] [-v]` | Stop/remove the stack (`-v` also drops volumes). |
 | `scripts/test-renderers.sh [server\|bridge\|both]` | Renderer conformance matrix (build + assert contract). |
+| `scripts/airgap-bundle.sh [server\|bridge] [--llm] [--build]` | Pack images + compose (egress-locked) + run.sh into one portable `dist/*.tar.gz` for an offline host. |
+| `scripts/airgap-dev.sh` | Run the **host** dev stack (`:5180`) air-gapped: a local PlantUML renderer container replaces plantuml.com for preview + validation. |
 
 ```bash
 scripts/docker-up.sh bridge          # build + run, open http://localhost:8088/
 scripts/docker-up.sh server --llm    # external render + LLM
 scripts/docker-down.sh bridge        # shut down
+scripts/airgap-bundle.sh bridge --build   # one portable offline tarball (see ../DEPLOY.md)
 ```
+
+> **Egress lockdown:** add `-f docker-compose.airgap.yml` to any compose command to
+> put the backend services on an `internal: true` network (no internet at runtime).
+> `airgap-bundle.sh` bakes this in. See [`../DEPLOY.md`](../DEPLOY.md).
 
 | Script | What it does |
 |---|---|
