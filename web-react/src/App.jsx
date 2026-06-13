@@ -10,7 +10,7 @@ import ConvertPanel from './components/ConvertPanel.jsx';
 import Split from './components/Split.jsx';
 import EditorBar from './components/EditorBar.jsx';
 import ImageView from './components/ImageView.jsx';
-import { detectFormat } from './lib/mdBlocks.js';
+import { detectFormat, looksLikeProse, docToDescription } from './lib/mdBlocks.js';
 import { openFile, saveFileAs, saveToHandle, supportsFS } from './lib/fileAccess.js';
 
 // mermaid is ~1.7 MB; load it only when a Mermaid diagram is actually previewed.
@@ -205,7 +205,11 @@ export default function App() {
   const onFix = useCallback(() => {
     if (!text.trim()) { setStatus('Nothing to fix', 'warn'); return; }
     setLogOpen(true);
-    agent.fix(text);
+    // A markdown/prose document can't be repaired into a diagram by the Fix loop
+    // (it would just error on invalid syntax) — generate a diagram from the doc's
+    // cleaned prose instead.
+    if (looksLikeProse(text)) agent.convertDoc(docToDescription(text));
+    else agent.fix(text);
   }, [text, agent, setStatus]);
 
   const onGenerate = useCallback(() => {

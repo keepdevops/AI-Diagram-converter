@@ -42,7 +42,7 @@ export function useAgent({ applyDiagram, setStatus }) {
   const run = useCallback(
     async (kind, payload) => {
       if (running) return;
-      const heading = kind === 'fix' ? 'Fixing' : 'Generating';
+      const heading = kind === 'fix' ? 'Fixing' : kind === 'convert' ? 'Converting' : 'Generating';
       setTitle(heading);
       setLog([]);
       setRunning(true);
@@ -50,6 +50,9 @@ export function useAgent({ applyDiagram, setStatus }) {
       const controller = new AbortController();
       abortRef.current = controller;
       try {
+        // 'convert' = the editor held a document, not a diagram: generate one
+        // from it rather than trying to repair invalid syntax with the Fix loop.
+        if (kind === 'convert') append('Editor content looks like a document — generating a diagram from it.', 'info');
         const t =
           kind === 'fix'
             ? await apiFix(payload.text, controller.signal)
@@ -76,6 +79,8 @@ export function useAgent({ applyDiagram, setStatus }) {
     (description, type) => run('generate', { description, type }),
     [run]
   );
+  // Convert a pasted document into a diagram (generation, with doc-aware framing).
+  const convertDoc = useCallback((text) => run('convert', { description: text }), [run]);
   const cancel = useCallback(() => abortRef.current?.abort(), []);
 
   const checkHealth = useCallback(async () => {
@@ -87,5 +92,5 @@ export function useAgent({ applyDiagram, setStatus }) {
     }
   }, []);
 
-  return { running, title, log, fix, generate, cancel, checkHealth };
+  return { running, title, log, fix, generate, convertDoc, cancel, checkHealth };
 }
