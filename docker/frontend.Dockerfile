@@ -2,7 +2,8 @@
 # Build context is the repo root.
 
 # --- build stage ---------------------------------------------------------
-FROM node:20-alpine AS build
+# Vite 8 (Rolldown) requires Node ^20.19 || >=22.12; use the 22 LTS line.
+FROM node:22-alpine AS build
 WORKDIR /app
 
 # Install deps from the lockfile first for layer caching.
