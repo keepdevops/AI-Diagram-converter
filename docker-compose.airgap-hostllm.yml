@@ -1,0 +1,16 @@
+# Air-gap variant: render stays internet-blocked, but the bridge is allowed to
+# reach the HOST's matrix-safe LLM (Metal-accelerated, e.g. an Apple M3) for
+# Fix / Generate. Layer this AFTER docker-compose.airgap.yml.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.airgap.yml \
+#                  -f docker-compose.airgap-hostllm.yml --profile render-server up -d
+#
+# Posture: `render` is on airgap-lan only (no egress — blocks PlantUML !include
+# SSRF). `bridge` is added to airgap-edge so host.docker.internal resolves and the
+# host LLM is reachable; the bridge therefore also *can* egress, but only calls the
+# local host LLM + the internal render. The provable-isolation guarantee narrows
+# from "whole backend" to "the render engine" in exchange for the fast host LLM.
+
+services:
+  bridge:
+    networks: [airgap-edge, airgap-lan]
