@@ -57,6 +57,8 @@ html, body, #root {
   flex-wrap: wrap;
 }
 .toolbar h1 { font-size: 15px; margin: 0; color: var(--color-accent); }
+.brand { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; letter-spacing: 0.2px; }
+.brand-logo { flex: none; display: block; }
 .toolbar label {
   display: flex; align-items: center; gap: var(--space-1);
   font-size: 12px; color: var(--color-muted);
