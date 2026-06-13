@@ -25,7 +25,14 @@ export default function Toolbar({ view, onView, file, swarmInfo, settings }) {
 
   return (
     <header className="toolbar">
-      <h1>PlantUML ✦</h1>
+      <h1 className="brand" title="cofidiagrams — by Coficube">
+        <svg className="brand-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <polygon points="12,2 21,7 12,12 3,7" fill="currentColor" opacity="0.95" />
+          <polygon points="3,7 12,12 12,22 3,17" fill="currentColor" opacity="0.55" />
+          <polygon points="21,7 12,12 12,22 21,17" fill="currentColor" opacity="0.78" />
+        </svg>
+        cofidiagrams
+      </h1>
 
       <div className="seg">
         {TABS.map(([id, label]) => (
