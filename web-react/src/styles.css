@@ -308,6 +308,11 @@ html, body, #root {
 }
 
 /* ---- React Flow theming (Graph + Designer) -------------------------------- */
+/* Contain the absolutely-positioned canvas: without a flex-sized, positioned
+   host the .graph-canvas (inset:0) escapes to the viewport and overlays the
+   toolbar/action-bar (mirrors the Designer's .designer / .designer-stage). */
+.graphview { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.graph-host { flex: 1 1 auto; position: relative; min-width: 0; min-height: 0; }
 .graph-canvas, .designer-canvas { position: absolute; inset: 0; }
 .react-flow__node-default,
 .gnode, .shape {
