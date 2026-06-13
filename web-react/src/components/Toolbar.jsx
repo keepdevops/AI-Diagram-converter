@@ -5,6 +5,7 @@
 import Popover from './Popover.jsx';
 import FileMenu from './FileMenu.jsx';
 import SettingsPanel from './SettingsPanel.jsx';
+import HelpPanel from './HelpPanel.jsx';
 
 const TABS = [
   ['editor', 'Editor'],
@@ -37,6 +38,10 @@ export default function Toolbar({ view, onView, file, swarmInfo, settings }) {
       <span className={`badge ${badge.cls}`} title={swarmInfo?.matrix_url || ''}>{badge.text}</span>
 
       <FileMenu {...file} />
+
+      <Popover label="?" title="Help" align="right" className="help-pop">
+        <HelpPanel />
+      </Popover>
 
       <Popover label="⚙" title="Settings" align="right" className="settings-pop">
         <SettingsPanel {...settings} badge={badge} swarmInfo={swarmInfo} />

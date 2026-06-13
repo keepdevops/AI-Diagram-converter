@@ -4,6 +4,9 @@ A browser-based diagram editor for **PlantUML** and **Mermaid**, with a live
 preview, AI-assisted Fix / Generate / Convert (via a local **matrix-safe** LLM),
 and a visual **Designer** canvas — packaged to run **fully air-gapped** with Docker.
 
+> New here? Open the app and click the **?** (Help) button in the top-right for
+> an in-app quick reference to every view, action, and shortcut.
+
 ## Features
 
 - **Editor + live preview** — CodeMirror6 with PlantUML (server-rendered) and
@@ -40,6 +43,14 @@ See **[DEPLOY.md](DEPLOY.md)** for air-gapped install, renderer modes, and the L
 ```bash
 scripts/start.sh                     # bridge + Vite dev server; see scripts/README.md
 ```
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| ⌘/Ctrl + S | Save |
+| ⌘/Ctrl + ⇧ + S | Save As |
+| ⌘/Ctrl + O | Open |
 
 ## Testing
 
