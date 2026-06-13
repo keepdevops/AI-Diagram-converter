@@ -2,6 +2,12 @@
 // agent backend / dialogs / file pickers, then clicks every button and fails on
 // any uncaught page error or console error. Run with: npm run smoke
 // (Start the dev server first: npm run dev. Override URL with SMOKE_URL.)
+//
+// KNOWN-STALE: the File-menu / EditorBar / split-gutter sections assume the
+// editor view is active and use selectors that have drifted from the current UI.
+// Runs non-blocking in CI (frontend.yml). TODO: refresh selectors + re-assert the
+// active view before each section. The focused convert.mjs / designer.mjs tests
+// cover the critical paths in the meantime.
 
 import { chromium } from 'playwright';
 
@@ -9,7 +15,10 @@ const URL = process.env.SMOKE_URL || 'http://localhost:5180/';
 const errors = [];
 const log = (...a) => console.log(...a);
 
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+// PW_CHANNEL: unset → installed Chrome (local default); set empty in CI to use
+// Playwright's bundled chromium; or e.g. 'msedge'.
+const channel = process.env.PW_CHANNEL ?? 'chrome';
+const browser = await chromium.launch({ ...(channel ? { channel } : {}), headless: true });
 const page = await (await browser.newContext()).newPage();
 
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
