@@ -101,11 +101,12 @@ export default function App() {
 
   // Clear the pasted code/text in the editor. Confirm first so content isn't
   // lost by accident; clearing the text also drops any imported image preview.
+  // (No success status here: the Preview re-renders empty text and immediately
+  // sets its own "Empty diagram" status, so any message set here is unseen.)
   const onClearEditor = useCallback(() => {
     if (!text.trim()) { setStatus('Editor already empty', 'info'); return; }
     if (!window.confirm('Clear the editor content?')) return;
     onEditText('');
-    setStatus('Cleared editor', 'info');
   }, [text, onEditText, setStatus]);
 
   const serverBase = (server.replace(/\/+$/, '')) || DEFAULT_SERVER;
