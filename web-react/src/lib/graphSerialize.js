@@ -32,7 +32,7 @@ function boxToPlantuml(model) {
   const out = ['@startuml'];
   const decl = (n, indent) => {
     if (n.kind === 'package') {
-      // A real package container with its grouped children nested inside.
+      // A package container nests its grouped children inside the braces.
       out.push(`${indent}package ${q(n.label)} as ${aliasOf(n.id)}${colorOf(n)} {`);
       for (const c of (children[n.id] || [])) decl(c, `${indent}  `);
       out.push(`${indent}}`);

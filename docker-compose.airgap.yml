@@ -1,0 +1,49 @@
+# Air-gap hardening overlay (DMZ topology).
+#
+# Two networks:
+#   airgap-lan  (internal: true)  — no route to the internet. The content-handling
+#                                   services (bridge, render, matrix-safe LLM) live
+#                                   here ONLY, so they physically cannot egress.
+#   airgap-edge (bridge)          — carries the frontend's published port (a single
+#                                   internal network can't publish a host port on
+#                                   Docker Desktop; verified by inspect).
+#
+# The frontend straddles both: it serves the SPA on WEB_PORT and reaches the
+# backend over airgap-lan. It is a static nginx whose only upstreams are the
+# internal services (/api -> bridge, /plantuml -> render); it originates no
+# outbound traffic. The services that actually process diagram content are the
+# ones provably cut off from the internet.
+#
+# Combine with a render mode (always) and, for AI Fix/Generate, the in-container
+# LLM (the default host LLM at host.docker.internal is unreachable here):
+#
+#   bridge (jar in-container, strongest — no external image):
+#     docker compose -f docker-compose.yml -f docker-compose.bridge.yml \
+#                    -f docker-compose.airgap.yml up -d
+#
+#   server (external plantuml-server/kroki image, pulled on the build host):
+#     docker compose -f docker-compose.yml -f docker-compose.airgap.yml \
+#                    --profile render-server up -d
+#
+#   + AI Fix/Generate (in-container matrix-safe, CPU; mount weights via MODEL_DIR):
+#     … -f docker-compose.container-llm.yml --profile llm
+#
+# Without an LLM the editor still loads and previews; Fix/Generate return a loud
+# 502 (never a silent failure). `scripts/airgap-bundle.sh` bakes these flags into
+# a one-command offline bundle.
+
+networks:
+  airgap-edge:
+    driver: bridge
+  airgap-lan:
+    internal: true
+
+services:
+  frontend:
+    networks: [airgap-edge, airgap-lan]
+  bridge:
+    networks: [airgap-lan]
+  render:
+    networks: [airgap-lan]
+  matrix-safe:
+    networks: [airgap-lan]

@@ -1,0 +1,16 @@
+# Self-contained in-container LLM (CPU) override.
+#
+# The base compose defaults the LLM to the HOST's Metal-accelerated matrix-safe
+# (fast, macOS dev). Use THIS override on a host with NO native matrix-safe (e.g.
+# a Linux / air-gapped server): it starts the in-container matrix-safe service
+# (`--profile llm`) and points the bridge back at it. CPU-only, so slower.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.container-llm.yml \
+#     --profile render-server --profile llm up -d
+#
+# (For a small/fast smoke test, set DIAGRAM_AGENT=docker-gemma2b.json.)
+services:
+  bridge:
+    environment:
+      MATRIX_SAFE_URL: "http://matrix-safe:8765"
+      DIAGRAM_AGENT: "docker-coder-14b.json"

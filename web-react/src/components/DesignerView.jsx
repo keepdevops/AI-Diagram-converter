@@ -1,7 +1,7 @@
 // Visual diagram designer: a shape palette (left), an interactive canvas (center),
 // and a styling inspector (right). Drag shapes on, drag to move (edges reflow),
-// connect by handles, select to style (color/shape/arrow), undo/redo, then Apply
-// to the editor as PlantUML/Mermaid or save the layout as .graph.json.
+// connect by handles, select to style (color/shape/arrow), group into containers,
+// undo/redo, then Apply to the editor as PlantUML/Mermaid or save as .graph.json.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import DesignerCanvas from './DesignerCanvas.jsx';
@@ -38,7 +38,7 @@ export default function DesignerView({ text, onApply, setStatus }) {
   // Fresh document → reset history to this single baseline.
   const setBaseline = useCallback((m) => {
     hist.current = { stack: [m], idx: 0 };
-    setModel(m); setResetKey((k) => k + 1); setSelected(null); syncHist();
+    setModel(m); setResetKey((k) => k + 1); setSelected(null); setSelectedIds([]); syncHist();
   }, []);
 
   // Record an edit. `reset` re-renders the canvas (false for canvas-originated
@@ -57,7 +57,7 @@ export default function DesignerView({ text, onApply, setStatus }) {
   const stepTo = useCallback((idx) => {
     const h = hist.current;
     h.idx = idx;
-    setModel(h.stack[idx]); setResetKey((k) => k + 1); setSelected(null); syncHist();
+    setModel(h.stack[idx]); setResetKey((k) => k + 1); setSelected(null); setSelectedIds([]); syncHist();
   }, []);
   const undo = useCallback(() => { const h = hist.current; if (h.idx > 0) stepTo(h.idx - 1); }, [stepTo]);
   const redo = useCallback(() => { const h = hist.current; if (h.idx < h.stack.length - 1) stepTo(h.idx + 1); }, [stepTo]);
