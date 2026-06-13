@@ -1,13 +1,8 @@
-// UI smoke test: launches the running dev server in headless Chrome, stubs the
-// agent backend / dialogs / file pickers, then clicks every button and fails on
-// any uncaught page error or console error. Run with: npm run smoke
-// (Start the dev server first: npm run dev. Override URL with SMOKE_URL.)
-//
-// KNOWN-STALE: the File-menu / EditorBar / split-gutter sections assume the
-// editor view is active and use selectors that have drifted from the current UI.
-// Runs non-blocking in CI (frontend.yml). TODO: refresh selectors + re-assert the
-// active view before each section. The focused convert.mjs / designer.mjs tests
-// cover the critical paths in the meantime.
+// UI smoke test: launches the running server in headless Chrome, stubs the agent
+// backend / dialogs / file pickers, then clicks every button across all tabs and
+// fails on any uncaught page error or console error. Run with: npm run smoke
+// (Serve the built app first — `npx vite preview` — and override URL with
+// SMOKE_URL; against `npm run dev` the lazy chunks cold-compile and can time out.)
 
 import { chromium } from 'playwright';
 
